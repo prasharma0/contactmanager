@@ -2,6 +2,7 @@ require("dotenv").config({path:"./config/config.env"});
 const express = require('express');
 const morgan = require("morgan");
 const connectDB = require('./config/db');
+const auth = require("./middlewares/auth"); //this middleware will be acting our defender for the route app.get("/protected");
 
 
 const app = express();
@@ -12,6 +13,9 @@ app.use(morgan("tiny"));
    // app.get("/", (req, res)=>{
    //     res.send("server established")
    // })
+app.get("/protected" , auth , (req , res)=>{
+   return res.status(200).json({ user: req.user}); //if the status is 200 then our token will be matched.
+});
 app.use("/api" , require("./routes/auth"));
 
 //server configurations

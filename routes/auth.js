@@ -2,7 +2,7 @@ const router = require("express").Router();
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken")
 //integrating our user model here
-const user = require("../models/user");
+const User = require("../models/User");
 
 router.post("/login", async (req , res)=>{
     const {email , password} = req.body;
@@ -19,7 +19,7 @@ router.post("/login", async (req , res)=>{
 
 
     try {
-        const doesUseralreadyExist = await user.findOne({email});
+        const doesUseralreadyExist = await User.findOne({email});
         if(!doesUseralreadyExist) return res.status(400).json({error:"Invalid email or password!"});
 
         //if user is truly present then,
@@ -30,7 +30,7 @@ router.post("/login", async (req , res)=>{
         //using jwt
         const payload = { _id: doesUseralreadyExist._id}; //this payload is using the userid as a payload/key
         const token = jwt.sign(payload, process.env.JWT_SECRET, {   //using a secret private key with the help of dotenv
-            expiresIn : 180,
+            expiresIn : 360,
         });
         return res.status(200).json({token});
     } catch (err) {
@@ -64,10 +64,10 @@ router.post("/register", async (req, res) => {
 
 
   try {
-      const doesUserexist = await user.findOne({email});
+      const doesUserexist = await User.findOne({email});
       if(doesUserexist) return res.status(400).json({error:`the email ${email} you provided already exists!`})
       const hashedPassword = await bcrypt.hash(password, 15) //here we are using bcrypt package to hash the password field in order to not get exposed by hacker;our password in plain text salted with 20.
-      const newUser = new user({name, email, password: hashedPassword});
+      const newUser = new User({name, email, password: hashedPassword});
 
       //and now to save the user registration
       const userSaving = await newUser.save();
