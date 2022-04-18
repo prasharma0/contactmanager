@@ -2,6 +2,7 @@ const router = require("express").Router();
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken")
 //integrating our user model here
+const auth = require("../middlewares/auth")
 const User = require("../models/User");
 
 router.post("/login", async (req , res)=>{
@@ -14,25 +15,28 @@ router.post("/login", async (req , res)=>{
 
      //testing the proper email
    if ( !emailReg.test(email)) return res.status(400).json({error:"Please enter a valid email address"});
+   
      //testing password
 
 
 
-    try {
+    try {  
         const doesUseralreadyExist = await User.findOne({email});
         if(!doesUseralreadyExist) return res.status(400).json({error:"Invalid email or password!"});
+        
 
         //if user is truly present then,
 
         const  doesPasswordMatch = await bcrypt.compare( password, doesUseralreadyExist.password) //plane text format is password and the encrypted format of the password is doesUseralreadyExist which we are comparing
         if(!doesPasswordMatch)return res.status(400).json({error: "Invalid email or password!"})
         
-        //using jwt
+        //using jwt 
         const payload = { _id: doesUseralreadyExist._id}; //this payload is using the userid as a payload/key
         const token = jwt.sign(payload, process.env.JWT_SECRET, {   //using a secret private key with the help of dotenv
             expiresIn : 360,
         });
-        return res.status(200).json({token});
+        const user = {...doesUseralreadyExist._doc, password: undefined};
+        return res.status(200).json({token , user});
     } catch (err) {
         console.log(err);
             return res.status(500).json({ error: err.message }); //return with the status 500 containing JSON fetching the error msg.
@@ -47,8 +51,8 @@ router.post("/register", async (req, res) => {
       
         //for name validation using Regex
         // const nameReg =/^[a-zA-Z]+ [a-zA-Z]+$/;
-        if (name.length<=2)
-        return res.status(400).json({error:"Please input the proper name."});
+        // if (name.length<=2)
+        // return res.status(400).json({error:"Please input the proper name."});
 
 
 
@@ -78,6 +82,9 @@ router.post("/register", async (req, res) => {
             console.log(err);
             return res.status(500).json({ error: err.message }); //return with the status 500 containing JSON fetching the error msg.
         }
+});
+router.get("/me" , auth , async (req , res)=>{
+   return res.status(200).json({...req.user._doc});
 });
 
 module.exports = router;
