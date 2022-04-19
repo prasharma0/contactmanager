@@ -1,6 +1,8 @@
 const { validateContact, Contact } = require("../models/Contact");
 const auth = require("../middlewares/auth");
 
+const mongoose = require("mongoose");
+
 const router = require("express").Router();
 //creating a contact
 router.post("/contact", auth, async(req , res)=>{
@@ -33,9 +35,19 @@ router.get("/mycontacts", auth, async (req, res)=>{
 });
 //delete a contact
 router.delete("/delete/:id", auth, async (req, res)=>{
+    const {id} = req.params;
+    if(!id)return res.status(400).json({error:"no id specified."})
+    if(!mongoose.isValidObjectId(id)) return res.status(400).json({error: "please enter the valid id."})
     try {
+       const contact = await Contact.findOne({_id:id.toString()});
+       if(!contact) return res.status(400).json({error: "no contact found"});
+
+       if (req.user._id.toString() !== contact.postedBy._id.toString())
+        return res.status(401).json({error:"you can't delete other's contacts!"});
+        const result = await Contact.deleteOne({_id:id});
+
+        return res.status(200).json({...contact._doc}); 
         
-        const result = await Contact.
     } catch (err) {
         console.log(err);
     }
