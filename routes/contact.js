@@ -27,8 +27,8 @@ router.get("/mycontacts", auth, async (req, res)=>{
     try {
         const mycontacts = await Contact.find({postedBy:req.user._id}).populate("postedBy",
         "-password")
-        console.log(mycontacts)
-        return res.status(200).json({contacts: mycontacts});
+        //console.log(mycontacts)
+        return res.status(200).json({contacts: mycontacts.reverse()});
     } catch (err) {
        console.log(err);
     }
@@ -65,9 +65,26 @@ router.delete("/delete/:id", auth, async (req, res)=>{
        if (req.user._id.toString() !== contact.postedBy._id.toString())
         return res.status(401).json({error:"you can't delete other's contacts!"});
         const result = await Contact.deleteOne({_id:id});
+        const mycontacts = await Contact.find({postedBy:req.user._id}).populate("postedBy",
+        "-password")
 
-        return res.status(200).json({...contact._doc}); 
+        return res.status(200).json({...contact._doc , mycontacts: mycontacts.reverse()}); 
         
+    } catch (err) {
+        console.log(err);
+    }
+})
+//getting a single contact
+router.get("/contact/:id", auth , async(req, res)=>{
+    const {id} = req.params; 
+
+    if(!id)return res.status(400).json({error:"no id specified."})
+
+    if(!mongoose.isValidObjectId(id)) 
+    return res.status(400).json({error: "please enter the valid id."})
+    try {
+        const contact = await Contact.findById({_id:id});
+        return res.status(200).json({...contact._doc})
     } catch (err) {
         console.log(err);
     }
